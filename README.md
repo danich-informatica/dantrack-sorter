@@ -149,25 +149,6 @@ Orquestador
 `dantrack-sorter` es una librería pura: recibe datos, devuelve decisiones.
 No tiene I/O, no tiene estado global, no tiene dependencias externas.
 
-Ver [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) para arquitectura completa.  
-Ver [docs/INTEGRATION_CONTRACTS.md](docs/INTEGRATION_CONTRACTS.md) para contratos de integración.  
-Ver [docs/PUBLIC_API_REVIEW.md](docs/PUBLIC_API_REVIEW.md) para revisión de API.  
-Ver [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) para checklist de release.
-
-## Iteration Status
-
-| Iteración | Estado | Descripción |
-|---|---|---|
-| 01 | Completada | Propuesta técnica y arquitectura — [ITERATION_01_PROPOSAL.md](docs/iterations/ITERATION_01_PROPOSAL.md) |
-| 02 | Completada | Foundation: modelos, errores, validaciones, tests — [ITERATION_02_FOUNDATION.md](docs/iterations/ITERATION_02_FOUNDATION.md) |
-| 03 | Completada | Assignment matching: `EvaluateAssignments`, operadores, tags — [ITERATION_03_ASSIGNMENT_MATCHING.md](docs/iterations/ITERATION_03_ASSIGNMENT_MATCHING.md) |
-| 04 | Completada | Sorter decision engine: `ResolveSorter`, `NewEngine` — [ITERATION_04_SORTER_DECISION_ENGINE.md](docs/iterations/ITERATION_04_SORTER_DECISION_ENGINE.md) |
-| 05 | Completada | Presorter decision engine: `ResolvePresorter`, balanceo — [ITERATION_05_PRESORTER_DECISION_ENGINE.md](docs/iterations/ITERATION_05_PRESORTER_DECISION_ENGINE.md) |
-| 06 | Completada | Examples, documentación, contratos — [ITERATION_06_EXAMPLES_AND_DOCS.md](docs/iterations/ITERATION_06_EXAMPLES_AND_DOCS.md) |
-| 07 | Completada | Release Candidate, API hardening — [ITERATION_07_RELEASE_CANDIDATE.md](docs/iterations/ITERATION_07_RELEASE_CANDIDATE.md) |
-| 08 | Completada | External integration smoke test — [ITERATION_08_EXTERNAL_INTEGRATION_SMOKE.md](docs/iterations/ITERATION_08_EXTERNAL_INTEGRATION_SMOKE.md) |
-| 09 | Completada | Repository structure cleanup — [ITERATION_09_REPOSITORY_STRUCTURE_CLEANUP.md](docs/iterations/ITERATION_09_REPOSITORY_STRUCTURE_CLEANUP.md) |
-
 ## Repository Layout
 
 ```text
@@ -180,14 +161,6 @@ dantrack-sorter/
 │   ├── error_control/
 │   └── fallbacks/
 ├── integration_smoke/      # Smoke test externo (módulo independiente)
-├── docs/                   # Documentación vigente
-│   ├── ARCHITECTURE.md
-│   ├── INTEGRATION_CONTRACTS.md
-│   ├── PUBLIC_API_REVIEW.md
-│   ├── RELEASE_CHECKLIST.md
-│   ├── VERSIONING.md
-│   ├── iterations/         # Documentos de cierre por iteración
-│   └── audits/             # Auditorías y catastros
 ├── README.md
 ├── CHANGELOG.md
 ├── go.mod
