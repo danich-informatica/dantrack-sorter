@@ -7,6 +7,15 @@ Este proyecto usa [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [v0.1.0-rc2] — 2026-06-02
+
+### Fixed
+
+- Module path corregido de `github.com/dantrack/dantrack-sorter` a `github.com/danich-informatica/dantrack-sorter`.
+- Consumidores ya no necesitan `replace` directive para usar la librería.
+
+---
+
 ## [v0.1.0-rc1] — 2026-06-02
 
 Primera versión release candidate de `dantrack-sorter`.

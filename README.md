@@ -26,7 +26,7 @@ trazables con razón, regla aplicada y candidatos evaluados.
 
 ## Estado
 
-**v0.1.0-rc1** — Release Candidate.  
+**v0.1.0-rc2** — Release Candidate.  
 Motor completo: `ResolveSorter` + `ResolvePresorter` con estrategias de balanceo.  
 156 tests · 95.3% cobertura · race-free · sin dependencias externas.
 
@@ -35,7 +35,7 @@ Ver [CHANGELOG.md](CHANGELOG.md) para historial de cambios.
 ## Instalación
 
 ```bash
-go get github.com/dantrack/dantrack-sorter
+go get github.com/danich-informatica/dantrack-sorter
 ```
 
 ## Ejemplo Mínimo — Sorter
@@ -48,7 +48,7 @@ import (
     "fmt"
     "time"
 
-    sorter "github.com/dantrack/dantrack-sorter"
+    sorter "github.com/danich-informatica/dantrack-sorter"
 )
 
 func main() {
@@ -170,7 +170,7 @@ dantrack-sorter/
 El package principal vive en la raíz para mantener el import limpio:
 
 ```go
-import sorter "github.com/dantrack/dantrack-sorter"
+import sorter "github.com/danich-informatica/dantrack-sorter"
 ```
 
 ## Principios

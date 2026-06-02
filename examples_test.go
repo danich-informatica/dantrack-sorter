@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	sorter "github.com/dantrack/dantrack-sorter"
+	sorter "github.com/danich-informatica/dantrack-sorter"
 )
 
 func ExampleEvaluateAssignments() {
