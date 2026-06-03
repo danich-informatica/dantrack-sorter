@@ -54,6 +54,7 @@ const (
 	RuleSorterRejectNoMatch         Rule = "sorter_reject_no_match"
 	RuleSorterRejectNoAvailableExit Rule = "sorter_reject_no_available_exit"
 	RuleSorterPassAllTargetsFull    Rule = "sorter_pass_all_targets_full"
+	RuleSorterBalancedMultiTarget   Rule = "sorter_balanced_multi_target"
 )
 
 // ---------------------------------------------------------------------------
@@ -332,6 +333,10 @@ type SorterConfig struct {
 	// AmbiguityPolicy define cómo actuar ante asignaciones ambiguas de igual prioridad.
 	// Vacío equivale a AmbiguityPolicyError.
 	AmbiguityPolicy AmbiguityPolicy
+	// BalanceStrategy define cómo elegir entre múltiples targets disponibles en una asignación multi-target.
+	// Vacío = first-available (comportamiento legacy compatible).
+	// BalanceLeastLoaded = elige el exit con menor CurrentLoad.
+	BalanceStrategy BalanceStrategy
 }
 
 // SorterRequest es la entrada para una decisión de sorter.

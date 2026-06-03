@@ -11,6 +11,12 @@ Este proyecto usa [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- `SorterConfig.BalanceStrategy` — campo para seleccionar estrategia de balanceo multi-target.
+- `BalanceLeastLoaded` soportado en sorter: elige el exit con menor `CurrentLoad`.
+- `RuleSorterBalancedMultiTarget` — regla cuando se usa balanceo por carga.
+- `ActionPass` se produce activamente cuando todos los targets del match están `Full`.
+- `resolveBalancedMultiTarget` — método interno para balanceo least_loaded.
+- `pickLeastLoaded`, `exitLoad`, `allConfiguredTargetsFull`, `exitUnavailableReason` helpers.
 - `Assignment.TargetIDs []string` — soporte multi-target por asignación.
 - `ActionPass` — acción para "no accionar desvío" cuando hay destino lógico pero sin capacidad.
 - `RuleSorterPassAllTargetsFull` — regla para cuando todos los targets del match están llenos.
@@ -19,6 +25,9 @@ Este proyecto usa [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Validación de `SorterConfig`: solo acepta `""` y `BalanceLeastLoaded` como `BalanceStrategy`.
+- `ResolveSorter` bifurca en step 12: first-available (legacy) vs least_loaded (balanced).
+- Trazabilidad: `CandidateEvaluations` incluye carga de cada exit evaluado.
 - Validación de `Assignment` acepta `TargetID` (legacy) o `TargetIDs` (multi-target).
 - `checkAmbiguity` usa targets efectivos para comparación.
 

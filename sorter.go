@@ -84,7 +84,12 @@ func (e *Engine) ResolveSorter(ctx context.Context, req SorterRequest) (SorterDe
 	candidates := assignmentMatchesToCandidates(allMatches)
 
 	// 12. Intentar cada match en orden de prioridad descendente.
-	// Multi-target: iterate all effective target IDs for each matched assignment.
+	// Strategy fork: first-available (legacy) vs least_loaded (balanced).
+	if e.sorterCfg.BalanceStrategy == BalanceLeastLoaded {
+		return e.resolveBalancedMultiTarget(matched, candidates, trace, exitStateIdx, evalTime)
+	}
+
+	// Default: first-available. Iterate all effective target IDs for each matched assignment.
 	for _, m := range matched {
 		targetIDs := assignmentTargetIDs(m.Assignment)
 
@@ -285,6 +290,249 @@ func (e *Engine) checkAmbiguity(topMatches []AssignmentMatch) error {
 	}
 	// AmbiguityPolicyFirstWins: no error; el caller usará el primer match (topMatches[0]).
 	return nil
+}
+
+// ---------------------------------------------------------------------------
+// resolveBalancedMultiTarget — least_loaded strategy
+// ---------------------------------------------------------------------------
+
+// resolveBalancedMultiTarget implements BalanceLeastLoaded for multi-target assignments.
+// For each matched assignment (in priority order), it collects all effective targets and:
+//   - If at least one target is available: picks the one with lowest CurrentLoad (tie-break by TargetIDs order).
+//   - If all targets are Full: returns ActionPass with RuleSorterPassAllTargetsFull.
+//   - If all targets are unavailable (blocked/error/maintenance/not in config) but not all Full:
+//     falls through to fallback/default/reject.
+func (e *Engine) resolveBalancedMultiTarget(
+	matched []AssignmentMatch,
+	candidates []CandidateEvaluation,
+	trace DecisionTrace,
+	exitStateIdx map[string]SorterExitState,
+	evalTime time.Time,
+) (SorterDecision, error) {
+	for _, m := range matched {
+		targetIDs := assignmentTargetIDs(m.Assignment)
+
+		var available []string
+		allFull := true
+		anyFull := false
+
+		for _, exitID := range targetIDs {
+			if _, inConfig := e.exitIndex[exitID]; !inConfig {
+				allFull = false
+				candidates = append(candidates, CandidateEvaluation{
+					TargetType:     TargetTypeExit,
+					TargetID:       exitID,
+					Eligible:       false,
+					RejectedReason: "exit not in sorter config",
+					AssignmentID:   m.Assignment.ID,
+				})
+				continue
+			}
+
+			state, hasState := exitStateIdx[exitID]
+			if hasState && state.Full {
+				anyFull = true
+				candidates = append(candidates, CandidateEvaluation{
+					TargetType:     TargetTypeExit,
+					TargetID:       exitID,
+					Eligible:       false,
+					RejectedReason: fmt.Sprintf("exit full (load=%d)", state.CurrentLoad),
+					AssignmentID:   m.Assignment.ID,
+				})
+				continue
+			}
+
+			if isExitAvailable(exitID, e.exitIndex, exitStateIdx) {
+				allFull = false
+				load := 0
+				if hasState {
+					load = state.CurrentLoad
+				}
+				available = append(available, exitID)
+				candidates = append(candidates, CandidateEvaluation{
+					TargetType:     TargetTypeExit,
+					TargetID:       exitID,
+					Eligible:       true,
+					RejectedReason: fmt.Sprintf("load=%d", load),
+					Rule:           RuleSorterBalancedMultiTarget,
+					AssignmentID:   m.Assignment.ID,
+				})
+			} else {
+				allFull = false
+				reason := "exit unavailable"
+				if hasState {
+					reason = exitUnavailableReason(state)
+				}
+				candidates = append(candidates, CandidateEvaluation{
+					TargetType:     TargetTypeExit,
+					TargetID:       exitID,
+					Eligible:       false,
+					RejectedReason: reason,
+					AssignmentID:   m.Assignment.ID,
+				})
+			}
+		}
+
+		// Case: at least one available → pick least loaded.
+		if len(available) > 0 {
+			chosen := pickLeastLoaded(available, exitStateIdx)
+			chosenLoad := 0
+			if st, ok := exitStateIdx[chosen]; ok {
+				chosenLoad = st.CurrentLoad
+			}
+
+			trace.RuleApplied = RuleSorterBalancedMultiTarget
+			trace.Reason = fmt.Sprintf("balanced multi-target: chose %s (load=%d)", chosen, chosenLoad)
+			trace.CandidateEvaluations = candidates
+
+			return SorterDecision{
+				SorterID:     e.sorterCfg.SorterID,
+				ExitID:       chosen,
+				Action:       ActionRoute,
+				AssignmentID: m.Assignment.ID,
+				FallbackUsed: false,
+				Rejected:     false,
+				Trace:        trace,
+				EvalTime:     evalTime,
+			}, nil
+		}
+
+		// Case: all effective targets in config and all are Full → ActionPass.
+		if allFull && anyFull {
+			trace.RuleApplied = RuleSorterPassAllTargetsFull
+			trace.Reason = "all targets full; no capacity available"
+			trace.DiagnosticMessage = "ActionPass: logical destination exists but all exits are at capacity"
+			trace.CandidateEvaluations = candidates
+
+			return SorterDecision{
+				SorterID:     e.sorterCfg.SorterID,
+				Action:       ActionPass,
+				AssignmentID: m.Assignment.ID,
+				FallbackUsed: false,
+				Rejected:     false,
+				Trace:        trace,
+				EvalTime:     evalTime,
+			}, nil
+		}
+
+		// Mixed: some full, some blocked/unavailable/not-in-config, none available.
+		// If the only reason none are available is Full (all configured targets are full),
+		// produce ActionPass. Otherwise fall through to fallback.
+		if anyFull && allConfiguredTargetsFull(targetIDs, e.exitIndex, exitStateIdx) {
+			trace.RuleApplied = RuleSorterPassAllTargetsFull
+			trace.Reason = "all configured targets full; unconfigured targets ignored"
+			trace.DiagnosticMessage = "ActionPass: configured targets at capacity; unconfigured targets not considered operational"
+			trace.CandidateEvaluations = candidates
+
+			return SorterDecision{
+				SorterID:     e.sorterCfg.SorterID,
+				Action:       ActionPass,
+				AssignmentID: m.Assignment.ID,
+				FallbackUsed: false,
+				Rejected:     false,
+				Trace:        trace,
+				EvalTime:     evalTime,
+			}, nil
+		}
+
+		// All targets unavailable for non-capacity reasons; continue to next match or fallback.
+	}
+
+	// All matched assignments exhausted; try DefaultExitID as fallback.
+	if e.sorterCfg.DefaultExitID != "" && isExitAvailable(e.sorterCfg.DefaultExitID, e.exitIndex, exitStateIdx) {
+		candidates = append(candidates, CandidateEvaluation{
+			TargetType: TargetTypeExit,
+			TargetID:   e.sorterCfg.DefaultExitID,
+			Eligible:   true,
+			Rule:       RuleSorterFallbackDefaultExit,
+		})
+		trace.RuleApplied = RuleSorterFallbackDefaultExit
+		trace.Reason = "all matched exits unavailable; routed to default exit"
+		trace.CandidateEvaluations = candidates
+
+		return SorterDecision{
+			SorterID:     e.sorterCfg.SorterID,
+			ExitID:       e.sorterCfg.DefaultExitID,
+			Action:       ActionRoute,
+			FallbackUsed: true,
+			Rejected:     false,
+			Trace:        trace,
+			EvalTime:     evalTime,
+		}, nil
+	}
+
+	// No exit available at all.
+	trace.RuleApplied = RuleSorterRejectNoAvailableExit
+	trace.Reason = "no available exit for any matched assignment"
+	trace.DiagnosticMessage = "all exits are blocked, full, in maintenance, or not configured"
+	trace.CandidateEvaluations = candidates
+
+	return SorterDecision{
+		SorterID:     e.sorterCfg.SorterID,
+		Action:       ActionReject,
+		FallbackUsed: false,
+		Rejected:     true,
+		Trace:        trace,
+		EvalTime:     evalTime,
+	}, nil
+}
+
+// pickLeastLoaded selects the exit with the lowest CurrentLoad from available exits.
+// Tie-break: first in the available slice (preserves TargetIDs order).
+// If no state exists for an exit, CurrentLoad is treated as 0.
+func pickLeastLoaded(available []string, stateIdx map[string]SorterExitState) string {
+	best := available[0]
+	bestLoad := exitLoad(best, stateIdx)
+
+	for _, id := range available[1:] {
+		load := exitLoad(id, stateIdx)
+		if load < bestLoad {
+			best = id
+			bestLoad = load
+		}
+	}
+	return best
+}
+
+// exitLoad returns the CurrentLoad of an exit. Returns 0 if no state is present.
+func exitLoad(exitID string, stateIdx map[string]SorterExitState) int {
+	if st, ok := stateIdx[exitID]; ok {
+		return st.CurrentLoad
+	}
+	return 0
+}
+
+// allConfiguredTargetsFull returns true if every target that exists in the exit config is Full.
+// Targets not in config are ignored. Returns false if no target is in config.
+func allConfiguredTargetsFull(targetIDs []string, exitIndex map[string]SorterExit, stateIdx map[string]SorterExitState) bool {
+	count := 0
+	for _, id := range targetIDs {
+		if _, inConfig := exitIndex[id]; !inConfig {
+			continue
+		}
+		count++
+		st, hasState := stateIdx[id]
+		if !hasState || !st.Full {
+			return false
+		}
+	}
+	return count > 0
+}
+
+// exitUnavailableReason returns a human-readable reason for an unavailable exit.
+func exitUnavailableReason(st SorterExitState) string {
+	switch {
+	case st.Blocked:
+		return "exit blocked"
+	case st.HasError:
+		return "exit has error"
+	case st.Maintenance:
+		return "exit in maintenance"
+	case !st.Available:
+		return "exit not available"
+	default:
+		return "exit unavailable"
+	}
 }
 
 // ---------------------------------------------------------------------------

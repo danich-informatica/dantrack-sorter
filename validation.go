@@ -131,6 +131,11 @@ func ValidateSorterConfig(cfg SorterConfig) error {
 		return fmt.Errorf("%w: unknown AmbiguityPolicy %q", ErrInvalidConfig, cfg.AmbiguityPolicy)
 	}
 
+	// Sorter only supports "" (first-available) and BalanceLeastLoaded.
+	if cfg.BalanceStrategy != "" && cfg.BalanceStrategy != BalanceLeastLoaded {
+		return fmt.Errorf("%w: sorter only supports BalanceStrategy \"\" or %q, got %q", ErrInvalidConfig, BalanceLeastLoaded, cfg.BalanceStrategy)
+	}
+
 	return nil
 }
 
