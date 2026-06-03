@@ -44,6 +44,7 @@ const (
 	RulePresorterErrorControlPreferred    Rule = "presorter_error_control_preferred"
 	RulePresorterErrorFixedPark           Rule = "presorter_error_fixed_park"
 	RulePresorterPassErrorParkUnavailable Rule = "presorter_pass_error_park_unavailable"
+	RulePresorterGlobalBalance            Rule = "presorter_global_balance"
 	RulePresorterLeastLoaded              Rule = "presorter_least_loaded"
 	RulePresorterRoundRobin               Rule = "presorter_round_robin"
 	RulePresorterWeighted                 Rule = "presorter_weighted"
@@ -256,6 +257,11 @@ type ParkState struct {
 	HasError    bool
 	Maintenance bool
 	CurrentLoad int
+	// AccumulatedLoad representa la carga acumulada del park dentro de una ventana
+	// definida por el orquestador (turno, jornada, lote, ventana móvil).
+	// Se usa para balanceo global. La librería no calcula ni persiste este valor.
+	// Si es 0, se interpreta como "sin información acumulada" y se usa CurrentLoad.
+	AccumulatedLoad int
 }
 
 // PresorterConfig define la configuración del motor de presorter.

@@ -73,3 +73,57 @@ func currentLoadOf(parkID string, stateIdx map[string]*ParkState) int {
 	}
 	return 0
 }
+
+// hasAccumulatedLoad returns true if at least one candidate has AccumulatedLoad > 0
+// in the state index. This triggers global balance mode.
+func hasAccumulatedLoad(candidates []parkCandidate, stateIdx map[string]*ParkState) bool {
+	for _, c := range candidates {
+		if s := stateIdx[c.cfg.ParkID]; s != nil && s.AccumulatedLoad > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+// selectGlobalBalanced elige el park con menor AccumulatedLoad.
+// Si hay empate en AccumulatedLoad, desempata por menor CurrentLoad.
+// Si persiste empate, respeta orden de configuración (menor index primero).
+// AccumulatedLoad == 0 se trata como valor real (no como "sin información").
+//
+// Precondición: len(candidates) > 0.
+func selectGlobalBalanced(candidates []parkCandidate, stateIdx map[string]*ParkState) parkCandidate {
+	best := candidates[0]
+	bestAccum := accumulatedLoadOf(best.cfg.ParkID, stateIdx)
+	bestCurrent := currentLoadOf(best.cfg.ParkID, stateIdx)
+
+	for _, c := range candidates[1:] {
+		accum := accumulatedLoadOf(c.cfg.ParkID, stateIdx)
+		current := currentLoadOf(c.cfg.ParkID, stateIdx)
+
+		if accum < bestAccum {
+			best = c
+			bestAccum = accum
+			bestCurrent = current
+		} else if accum == bestAccum {
+			if current < bestCurrent {
+				best = c
+				bestAccum = accum
+				bestCurrent = current
+			} else if current == bestCurrent && c.index < best.index {
+				best = c
+				bestAccum = accum
+				bestCurrent = current
+			}
+		}
+	}
+	return best
+}
+
+// accumulatedLoadOf retorna el AccumulatedLoad de un park desde el índice de estados.
+// Si no hay estado para el park, retorna 0.
+func accumulatedLoadOf(parkID string, stateIdx map[string]*ParkState) int {
+	if s := stateIdx[parkID]; s != nil {
+		return s.AccumulatedLoad
+	}
+	return 0
+}

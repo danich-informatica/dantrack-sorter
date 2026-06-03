@@ -124,7 +124,7 @@ func (e *Engine) ResolvePresorter(ctx context.Context, req PresorterRequest) (Pr
 		}
 
 		trace.RuleApplied = rule
-		trace.Reason = "park selected by balance strategy"
+		trace.Reason = presorterBalanceReason(rule, chosen.cfg.ParkID, stateIdx)
 		trace.CandidateEvaluations = allEvals
 
 		return PresorterDecision{
@@ -291,6 +291,10 @@ func (e *Engine) selectByStrategy(candidates []parkCandidate, stateIdx map[strin
 		return selectWeighted(candidates), RulePresorterWeighted
 	default:
 		// least_loaded es el default (incluye cadena vacía).
+		// If any candidate has AccumulatedLoad > 0, use global balance.
+		if hasAccumulatedLoad(candidates, stateIdx) {
+			return selectGlobalBalanced(candidates, stateIdx), RulePresorterGlobalBalance
+		}
 		return selectLeastLoaded(candidates, stateIdx), RulePresorterLeastLoaded
 	}
 }
@@ -380,4 +384,19 @@ func parkRejectedReason(cfg ParkConfig, state *ParkState) string {
 		return "park in maintenance"
 	}
 	return "unknown"
+}
+
+// presorterBalanceReason builds a Reason string for the presorter balance decision.
+func presorterBalanceReason(rule Rule, parkID string, stateIdx map[string]*ParkState) string {
+	switch rule {
+	case RulePresorterGlobalBalance:
+		accum := accumulatedLoadOf(parkID, stateIdx)
+		current := currentLoadOf(parkID, stateIdx)
+		return fmt.Sprintf("global balance: chose %s (accumulated=%d, current=%d)", parkID, accum, current)
+	case RulePresorterLeastLoaded:
+		current := currentLoadOf(parkID, stateIdx)
+		return fmt.Sprintf("least loaded: chose %s (current=%d)", parkID, current)
+	default:
+		return "park selected by balance strategy"
+	}
 }

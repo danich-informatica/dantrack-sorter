@@ -11,6 +11,10 @@ Este proyecto usa [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- `ParkState.AccumulatedLoad` — carga acumulada histórica para balanceo global.
+- `RulePresorterGlobalBalance` — regla cuando se aplica balanceo por carga acumulada.
+- `selectGlobalBalanced` — selección de park por menor `AccumulatedLoad` con tie-break `CurrentLoad`.
+- `hasAccumulatedLoad` — detección automática de presencia de carga acumulada.
 - `PresorterConfig.ErrorParkID` — park fijo exclusivo para cajas error/no-read.
 - `RulePresorterErrorFixedPark` — regla para routing a error park fijo.
 - `RulePresorterPassErrorParkUnavailable` — regla para ActionPass cuando error park no disponible.
@@ -29,6 +33,8 @@ Este proyecto usa [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- `selectByStrategy` default: si hay `AccumulatedLoad > 0`, usa balanceo global; sino `least_loaded`.
+- Trazabilidad Presorter: `Reason` incluye tipo de balanceo y carga del park elegido.
 - `ResolvePresorter`: si `ErrorParkID` configurado y caja es error/no-read, enruta exclusivamente sin fallback.
 - Validación de `PresorterConfig`: `ErrorParkID` debe referenciar park existente si no está vacío.
 - Validación de `SorterConfig`: solo acepta `""` y `BalanceLeastLoaded` como `BalanceStrategy`.
