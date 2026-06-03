@@ -109,6 +109,30 @@ fmt.Printf("Action=%s ParkID=%s\n", decision.Action, decision.ParkID)
 // Output: Action=route ParkID=park_2
 ```
 
+## Balanceo Global (AccumulatedLoad)
+
+El presorter soporta balanceo por ventana de carga: si `ParkState.AccumulatedLoad > 0`
+en al menos un candidato, la selección prioriza el park con menor carga acumulada.
+
+**Importante:** `AccumulatedLoad` no es un total histórico de jornada.
+Representa la carga acumulada dentro de una **ventana de balance** que el orquestador
+define y calcula (ej: últimos 60 segundos, últimos 2 minutos).
+
+```go
+ParkStates: []sorter.ParkState{
+    {ParkID: "park_1", Available: true, CurrentLoad: 5, AccumulatedLoad: 120},
+    {ParkID: "park_2", Available: true, CurrentLoad: 8, AccumulatedLoad: 95},
+}
+// → elige park_2 (menor AccumulatedLoad en ventana)
+```
+
+La librería no calcula ni resetea la ventana. El orquestador es responsable de:
+1. Definir el tamaño de ventana (30s, 1min, 5min, etc).
+2. Calcular cuántas cajas fueron enrutadas a cada park en esa ventana.
+3. Entregar el snapshot en `ParkState.AccumulatedLoad`.
+
+Si `AccumulatedLoad == 0` en todos los parks, se usa `CurrentLoad` (least_loaded).
+
 ## Tests
 
 ```bash

@@ -75,7 +75,8 @@ func currentLoadOf(parkID string, stateIdx map[string]*ParkState) int {
 }
 
 // hasAccumulatedLoad returns true if at least one candidate has AccumulatedLoad > 0
-// in the state index. This triggers global balance mode.
+// in the state index. This triggers global balance mode, where the library selects
+// by windowed accumulated load instead of CurrentLoad.
 func hasAccumulatedLoad(candidates []parkCandidate, stateIdx map[string]*ParkState) bool {
 	for _, c := range candidates {
 		if s := stateIdx[c.cfg.ParkID]; s != nil && s.AccumulatedLoad > 0 {
@@ -85,7 +86,9 @@ func hasAccumulatedLoad(candidates []parkCandidate, stateIdx map[string]*ParkSta
 	return false
 }
 
-// selectGlobalBalanced elige el park con menor AccumulatedLoad.
+// selectGlobalBalanced elige el park con menor AccumulatedLoad (carga en ventana).
+// El valor de AccumulatedLoad es provisto por el orquestador y representa cuántas
+// cajas fueron enrutadas a cada park en una ventana de tiempo reciente (ej: 60s).
 // Si hay empate en AccumulatedLoad, desempata por menor CurrentLoad.
 // Si persiste empate, respeta orden de configuración (menor index primero).
 // AccumulatedLoad == 0 se trata como valor real (no como "sin información").
@@ -119,7 +122,7 @@ func selectGlobalBalanced(candidates []parkCandidate, stateIdx map[string]*ParkS
 	return best
 }
 
-// accumulatedLoadOf retorna el AccumulatedLoad de un park desde el índice de estados.
+// accumulatedLoadOf retorna el AccumulatedLoad (carga en ventana de balance) de un park.
 // Si no hay estado para el park, retorna 0.
 func accumulatedLoadOf(parkID string, stateIdx map[string]*ParkState) int {
 	if s := stateIdx[parkID]; s != nil {

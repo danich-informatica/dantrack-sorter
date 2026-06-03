@@ -13,7 +13,7 @@ Este proyecto usa [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - `AvailableSKUsPerExit` — vista pura de SKUs disponibles por salida de sorter.
 - `AvailableSKUsPerPark` — vista pura de SKUs disponibles por parque de presorter.
-- `ParkState.AccumulatedLoad` — carga acumulada histórica para balanceo global.
+- `ParkState.AccumulatedLoad` — carga acumulada en ventana de balance (no histórico total).
 - `RulePresorterGlobalBalance` — regla cuando se aplica balanceo por carga acumulada.
 - `selectGlobalBalanced` — selección de park por menor `AccumulatedLoad` con tie-break `CurrentLoad`.
 - `hasAccumulatedLoad` — detección automática de presencia de carga acumulada.
@@ -35,6 +35,7 @@ Este proyecto usa [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Documentación de `AccumulatedLoad`: aclarada como ventana de balance, no histórico total.
 - `selectByStrategy` default: si hay `AccumulatedLoad > 0`, usa balanceo global; sino `least_loaded`.
 - Trazabilidad Presorter: `Reason` incluye tipo de balanceo y carga del park elegido.
 - `ResolvePresorter`: si `ErrorParkID` configurado y caja es error/no-read, enruta exclusivamente sin fallback.

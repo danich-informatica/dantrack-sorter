@@ -257,10 +257,15 @@ type ParkState struct {
 	HasError    bool
 	Maintenance bool
 	CurrentLoad int
-	// AccumulatedLoad representa la carga acumulada del park dentro de una ventana
-	// definida por el orquestador (turno, jornada, lote, ventana móvil).
-	// Se usa para balanceo global. La librería no calcula ni persiste este valor.
-	// Si es 0, se interpreta como "sin información acumulada" y se usa CurrentLoad.
+	// AccumulatedLoad es la carga acumulada del park dentro de una ventana de balance
+	// definida y calculada por el orquestador. No es un total histórico de jornada.
+	//
+	// Ejemplo: el orquestador puede calcular "cajas enrutadas a este park en los
+	// últimos 60 segundos" y entregar ese valor aquí. La ventana puede ser de 30s,
+	// 1min, 2min, 5min, o cualquier período que la operación defina.
+	//
+	// La librería no calcula, persiste ni resetea este valor.
+	// Si es 0, se interpreta como "sin información de ventana" y se usa CurrentLoad.
 	AccumulatedLoad int
 }
 
