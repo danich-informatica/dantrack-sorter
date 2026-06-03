@@ -26,9 +26,10 @@ trazables con razón, regla aplicada y candidatos evaluados.
 
 ## Estado
 
-**v0.1.0-rc2** — Release Candidate.  
-Motor completo: `ResolveSorter` + `ResolvePresorter` con estrategias de balanceo.  
-156 tests · 95.3% cobertura · race-free · sin dependencias externas.
+**v0.2.0** — Stable release.  
+Motor completo: `ResolveSorter` + `ResolvePresorter` con balanceo multi-target,
+error park fijo, balanceo global por ventana, y vistas de disponibilidad.  
+262 tests · 94.4% cobertura · race-free · sin dependencias externas.
 
 Ver [CHANGELOG.md](CHANGELOG.md) para historial de cambios.
 
@@ -215,10 +216,11 @@ import sorter "github.com/danich-informatica/dantrack-sorter"
 
 ## Próximos Pasos
 
-El motor de decisión está completo y listo para uso en producción (v0.1.0-rc1).
+El motor de decisión está completo y estable (v0.2.0).
 
-Posibles extensiones para v0.2.0:
-- Adapters: interfaces `ConfigLoader`, `StateProvider`, `AuditWriter`.
-- Métricas: hooks para Prometheus/OpenTelemetry.
+Posibles extensiones para v0.3.0:
+- Vista inversa: dado un SKU, qué exits/parks lo aceptan.
+- Prioridad por tipo de producto en Presorter.
+- Overflow rules entre parks.
 - Nuevos operadores: regex, contains, range numérico.
-- Weighted-random: distribución proporcional por peso.
+- Adapters: interfaces `ConfigLoader`, `StateProvider`, `AuditWriter`.
