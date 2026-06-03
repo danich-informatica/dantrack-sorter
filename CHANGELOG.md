@@ -50,6 +50,11 @@ Este proyecto usa [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - `Assignment.TargetID` — usar `TargetIDs` para asignaciones nuevas.
 
+### Verified
+
+- Integración externa aprobada (`prueba-librería`): 40 tests PASS, race-free, sin bugs.
+- Import directo sin `replace` directive.
+
 ---
 
 ## [v0.1.0-rc2] — 2026-06-02
