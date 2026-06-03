@@ -224,8 +224,9 @@ func validateAssignment(a Assignment, idx int) error {
 	if !slices.Contains(validTargetTypes, a.TargetType) {
 		return fmt.Errorf("%w: assignment %q has unknown TargetType %q", ErrInvalidRequest, a.ID, a.TargetType)
 	}
-	if a.TargetID == "" {
-		return fmt.Errorf("%w: assignment %q has empty TargetID", ErrMissingRequiredField, a.ID)
+	// Accept TargetID (legacy) or TargetIDs (multi-target). At least one must be present.
+	if len(assignmentTargetIDs(a)) == 0 {
+		return fmt.Errorf("%w: assignment %q has no valid target (both TargetID and TargetIDs are empty)", ErrMissingRequiredField, a.ID)
 	}
 	if !a.ValidFrom.IsZero() && !a.ValidTo.IsZero() && a.ValidTo.Before(a.ValidFrom) {
 		return fmt.Errorf("%w: assignment %q has ValidTo before ValidFrom", ErrInvalidRequest, a.ID)

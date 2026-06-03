@@ -199,3 +199,31 @@ func applyOperator(op MatchOperator, actual string, values []string) bool {
 		return false
 	}
 }
+
+// assignmentTargetIDs returns the effective target IDs for an assignment.
+// If TargetIDs has non-empty elements, returns those (filtered, deduped).
+// Otherwise falls back to TargetID (single legacy field).
+// Returns nil if both are empty.
+func assignmentTargetIDs(a Assignment) []string {
+	if len(a.TargetIDs) > 0 {
+		seen := make(map[string]struct{}, len(a.TargetIDs))
+		out := make([]string, 0, len(a.TargetIDs))
+		for _, id := range a.TargetIDs {
+			if id == "" {
+				continue
+			}
+			if _, dup := seen[id]; dup {
+				continue
+			}
+			seen[id] = struct{}{}
+			out = append(out, id)
+		}
+		if len(out) > 0 {
+			return out
+		}
+	}
+	if a.TargetID != "" {
+		return []string{a.TargetID}
+	}
+	return nil
+}

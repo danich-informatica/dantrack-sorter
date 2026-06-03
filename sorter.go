@@ -84,53 +84,55 @@ func (e *Engine) ResolveSorter(ctx context.Context, req SorterRequest) (SorterDe
 	candidates := assignmentMatchesToCandidates(allMatches)
 
 	// 12. Intentar cada match en orden de prioridad descendente.
+	// Multi-target: iterate all effective target IDs for each matched assignment.
 	for _, m := range matched {
-		exitID := m.Assignment.TargetID
+		targetIDs := assignmentTargetIDs(m.Assignment)
 
-		if _, inConfig := e.exitIndex[exitID]; !inConfig {
-			// Exit referenciado por la asignación no existe en la configuración del sorter.
+		for _, exitID := range targetIDs {
+			if _, inConfig := e.exitIndex[exitID]; !inConfig {
+				candidates = append(candidates, CandidateEvaluation{
+					TargetType:     TargetTypeExit,
+					TargetID:       exitID,
+					Eligible:       false,
+					RejectedReason: "exit not in sorter config",
+					AssignmentID:   m.Assignment.ID,
+				})
+				continue
+			}
+
+			if isExitAvailable(exitID, e.exitIndex, exitStateIdx) {
+				candidates = append(candidates, CandidateEvaluation{
+					TargetType:   TargetTypeExit,
+					TargetID:     exitID,
+					Eligible:     true,
+					Rule:         RuleSorterAssignmentMatched,
+					AssignmentID: m.Assignment.ID,
+				})
+				trace.RuleApplied = RuleSorterAssignmentMatched
+				trace.Reason = "assignment matched and exit available"
+				trace.CandidateEvaluations = candidates
+
+				return SorterDecision{
+					SorterID:     e.sorterCfg.SorterID,
+					ExitID:       exitID,
+					Action:       ActionRoute,
+					AssignmentID: m.Assignment.ID,
+					FallbackUsed: false,
+					Rejected:     false,
+					Trace:        trace,
+					EvalTime:     evalTime,
+				}, nil
+			}
+
+			// Exit exists but not available; try next target.
 			candidates = append(candidates, CandidateEvaluation{
 				TargetType:     TargetTypeExit,
 				TargetID:       exitID,
 				Eligible:       false,
-				RejectedReason: "exit not in sorter config",
+				RejectedReason: "exit unavailable",
 				AssignmentID:   m.Assignment.ID,
 			})
-			continue
 		}
-
-		if isExitAvailable(exitID, e.exitIndex, exitStateIdx) {
-			candidates = append(candidates, CandidateEvaluation{
-				TargetType:   TargetTypeExit,
-				TargetID:     exitID,
-				Eligible:     true,
-				Rule:         RuleSorterAssignmentMatched,
-				AssignmentID: m.Assignment.ID,
-			})
-			trace.RuleApplied = RuleSorterAssignmentMatched
-			trace.Reason = "assignment matched and exit available"
-			trace.CandidateEvaluations = candidates
-
-			return SorterDecision{
-				SorterID:     e.sorterCfg.SorterID,
-				ExitID:       exitID,
-				Action:       ActionRoute,
-				AssignmentID: m.Assignment.ID,
-				FallbackUsed: false,
-				Rejected:     false,
-				Trace:        trace,
-				EvalTime:     evalTime,
-			}, nil
-		}
-
-		// Exit existe pero no está disponible; continuar con el siguiente match.
-		candidates = append(candidates, CandidateEvaluation{
-			TargetType:     TargetTypeExit,
-			TargetID:       exitID,
-			Eligible:       false,
-			RejectedReason: "exit unavailable",
-			AssignmentID:   m.Assignment.ID,
-		})
 	}
 
 	// 13. Todos los exits de asignaciones no disponibles; intentar DefaultExitID como fallback.
@@ -244,15 +246,26 @@ func (e *Engine) resolveNoMatch(
 	}, nil
 }
 
-// checkAmbiguity verifica si los topMatches (igual prioridad) apuntan a distintos exits.
-// Si hay ambigüedad real, aplica la AmbiguityPolicy del sorter:
-//   - vacío o "error" → devuelve ErrAmbiguousAssignment
-//   - "first_wins" → no error (el caller usará el primer elemento, ya en orden estable)
+// checkAmbiguity verifies if topMatches (equal priority) point to different targets.
+// With multi-target, compares the first effective target of each assignment.
+// If there is real ambiguity, applies the AmbiguityPolicy:
+//   - empty or "error" → returns ErrAmbiguousAssignment
+//   - "first_wins" → no error (caller uses first match)
 func (e *Engine) checkAmbiguity(topMatches []AssignmentMatch) error {
-	targetID := topMatches[0].Assignment.TargetID
+	firstTargets := assignmentTargetIDs(topMatches[0].Assignment)
+	firstTarget := ""
+	if len(firstTargets) > 0 {
+		firstTarget = firstTargets[0]
+	}
+
 	ambiguous := false
 	for _, m := range topMatches[1:] {
-		if m.Assignment.TargetID != targetID {
+		targets := assignmentTargetIDs(m.Assignment)
+		t := ""
+		if len(targets) > 0 {
+			t = targets[0]
+		}
+		if t != firstTarget {
 			ambiguous = true
 			break
 		}

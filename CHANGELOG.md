@@ -7,6 +7,27 @@ Este proyecto usa [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [Unreleased]
+
+### Added
+
+- `Assignment.TargetIDs []string` — soporte multi-target por asignación.
+- `ActionPass` — acción para "no accionar desvío" cuando hay destino lógico pero sin capacidad.
+- `RuleSorterPassAllTargetsFull` — regla para cuando todos los targets del match están llenos.
+- `assignmentTargetIDs()` helper interno para resolución de targets efectivos.
+- `ResolveSorter` ahora itera todos los `TargetIDs` de un match buscando el primero disponible.
+
+### Changed
+
+- Validación de `Assignment` acepta `TargetID` (legacy) o `TargetIDs` (multi-target).
+- `checkAmbiguity` usa targets efectivos para comparación.
+
+### Deprecated
+
+- `Assignment.TargetID` — usar `TargetIDs` para asignaciones nuevas.
+
+---
+
 ## [v0.1.0-rc2] — 2026-06-02
 
 ### Fixed

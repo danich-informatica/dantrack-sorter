@@ -23,6 +23,10 @@ const (
 	ActionError Action = "error"
 	// ActionNoop indica que no se requiere acción (uso diagnóstico/testing).
 	ActionNoop Action = "noop"
+	// ActionPass indica que no se debe accionar ningún desvío.
+	// La caja continúa su recorrido sin intervención.
+	// Se usa cuando existe destino lógico, pero no hay capacidad disponible en ese momento.
+	ActionPass Action = "pass"
 )
 
 // ---------------------------------------------------------------------------
@@ -49,6 +53,7 @@ const (
 	RuleSorterFallbackDefaultExit   Rule = "sorter_fallback_default_exit"
 	RuleSorterRejectNoMatch         Rule = "sorter_reject_no_match"
 	RuleSorterRejectNoAvailableExit Rule = "sorter_reject_no_available_exit"
+	RuleSorterPassAllTargetsFull    Rule = "sorter_pass_all_targets_full"
 )
 
 // ---------------------------------------------------------------------------
@@ -195,10 +200,17 @@ type Assignment struct {
 	Priority   int
 	Conditions []MatchCondition
 	TargetType TargetType
-	TargetID   string
-	ValidFrom  time.Time
-	ValidTo    time.Time
-	Metadata   map[string]string
+	// TargetID es el destino único (campo legacy, single-target).
+	// Para asignaciones nuevas con múltiples destinos, usar TargetIDs.
+	// Si TargetIDs tiene valores, TargetID se ignora.
+	TargetID string
+	// TargetIDs contiene los destinos válidos para esta asignación.
+	// Si está vacío, se usa TargetID como fallback legacy.
+	// El Sorter evaluará disponibilidad de cada target en orden.
+	TargetIDs []string
+	ValidFrom time.Time
+	ValidTo   time.Time
+	Metadata  map[string]string
 }
 
 // AssignmentSet agrupa un conjunto de asignaciones para evaluación.
