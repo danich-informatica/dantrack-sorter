@@ -41,12 +41,14 @@ const (
 	RuleNone Rule = ""
 
 	// Presorter
-	RulePresorterErrorControlPreferred Rule = "presorter_error_control_preferred"
-	RulePresorterLeastLoaded           Rule = "presorter_least_loaded"
-	RulePresorterRoundRobin            Rule = "presorter_round_robin"
-	RulePresorterWeighted              Rule = "presorter_weighted"
-	RulePresorterFallbackDefaultPark   Rule = "presorter_fallback_default_park"
-	RulePresorterRejectNoAvailablePark Rule = "presorter_reject_no_available_park"
+	RulePresorterErrorControlPreferred    Rule = "presorter_error_control_preferred"
+	RulePresorterErrorFixedPark           Rule = "presorter_error_fixed_park"
+	RulePresorterPassErrorParkUnavailable Rule = "presorter_pass_error_park_unavailable"
+	RulePresorterLeastLoaded              Rule = "presorter_least_loaded"
+	RulePresorterRoundRobin               Rule = "presorter_round_robin"
+	RulePresorterWeighted                 Rule = "presorter_weighted"
+	RulePresorterFallbackDefaultPark      Rule = "presorter_fallback_default_park"
+	RulePresorterRejectNoAvailablePark    Rule = "presorter_reject_no_available_park"
 
 	// Sorter
 	RuleSorterAssignmentMatched     Rule = "sorter_assignment_matched"
@@ -263,6 +265,11 @@ type PresorterConfig struct {
 	// DefaultParkID es el parque de fallback final si ningún candidato está disponible.
 	// Debe referenciar un ParkID existente en Parks.
 	DefaultParkID string
+	// ErrorParkID define el park fijo para cajas con error/no-read.
+	// Si está configurado, las cajas con error se enrutan exclusivamente a ese park.
+	// Si el park no está disponible, se devuelve ActionPass; no se aplica fallback a otros parks.
+	// Debe referenciar un ParkID existente en Parks si no está vacío.
+	ErrorParkID string
 	// ErrorControlFlag define qué ErrorFlag de BoxContext indica que la caja
 	// requiere control de errores (ej: "requires_error_control").
 	ErrorControlFlag string

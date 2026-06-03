@@ -55,6 +55,12 @@ func (e *Engine) ResolvePresorter(ctx context.Context, req PresorterRequest) (Pr
 		CorrelationID: req.CorrelationID,
 	}
 
+	// 6b. Fixed error park: if box requires error control and ErrorParkID is configured,
+	// route exclusively to that park. No fallback to other parks.
+	if boxRequiresErrorControl(req.Box) && e.presorterCfg.ErrorParkID != "" {
+		return e.resolveFixedErrorPark(trace, stateIdx, evalTime)
+	}
+
 	// 7. Evaluar disponibilidad de cada park configurado.
 	var candidates []parkCandidate
 	var allEvals []CandidateEvaluation
@@ -178,6 +184,94 @@ func (e *Engine) ResolvePresorter(ctx context.Context, req PresorterRequest) (Pr
 		Action:                ActionReject,
 		FallbackUsed:          false,
 		ErrorControlRequired:  errorControlRequired,
+		ErrorControlAvailable: false,
+		BalanceStrategy:       e.presorterCfg.BalanceStrategy,
+		Trace:                 trace,
+		EvalTime:              evalTime,
+	}, nil
+}
+
+// resolveFixedErrorPark handles error/no-read boxes when ErrorParkID is configured.
+// Routes exclusively to ErrorParkID. If unavailable, returns ActionPass (no fallback).
+func (e *Engine) resolveFixedErrorPark(
+	trace DecisionTrace,
+	stateIdx map[string]*ParkState,
+	evalTime time.Time,
+) (PresorterDecision, error) {
+	errorParkID := e.presorterCfg.ErrorParkID
+
+	// Find park config.
+	var errorCfg *ParkConfig
+	for i := range e.presorterCfg.Parks {
+		if e.presorterCfg.Parks[i].ParkID == errorParkID {
+			errorCfg = &e.presorterCfg.Parks[i]
+			break
+		}
+	}
+
+	// Park not found in config (should not happen after validation, but defensive).
+	if errorCfg == nil {
+		trace.RuleApplied = RulePresorterPassErrorParkUnavailable
+		trace.Reason = "fixed error park unavailable; pass without diversion"
+		trace.DiagnosticMessage = "ErrorParkID not found in park config"
+		trace.CandidateEvaluations = []CandidateEvaluation{{
+			TargetType:     TargetTypePark,
+			TargetID:       errorParkID,
+			Eligible:       false,
+			RejectedReason: "park config not found",
+		}}
+
+		return PresorterDecision{
+			Action:                ActionPass,
+			FallbackUsed:          false,
+			ErrorControlRequired:  true,
+			ErrorControlAvailable: false,
+			BalanceStrategy:       e.presorterCfg.BalanceStrategy,
+			Trace:                 trace,
+			EvalTime:              evalTime,
+		}, nil
+	}
+
+	state := stateIdx[errorParkID]
+
+	if isParkAvailable(*errorCfg, state) {
+		trace.RuleApplied = RulePresorterErrorFixedPark
+		trace.Reason = "error/no-read routed to fixed error park"
+		trace.CandidateEvaluations = []CandidateEvaluation{{
+			TargetType: TargetTypePark,
+			TargetID:   errorParkID,
+			Eligible:   true,
+			Rule:       RulePresorterErrorFixedPark,
+		}}
+
+		return PresorterDecision{
+			ParkID:                errorParkID,
+			Action:                ActionRoute,
+			FallbackUsed:          false,
+			ErrorControlRequired:  true,
+			ErrorControlAvailable: errorCfg.HasErrorControl,
+			BalanceStrategy:       e.presorterCfg.BalanceStrategy,
+			Trace:                 trace,
+			EvalTime:              evalTime,
+		}, nil
+	}
+
+	// ErrorPark unavailable → ActionPass. NO fallback.
+	reason := parkRejectedReason(*errorCfg, state)
+	trace.RuleApplied = RulePresorterPassErrorParkUnavailable
+	trace.Reason = "fixed error park unavailable; pass without diversion"
+	trace.DiagnosticMessage = fmt.Sprintf("ErrorParkID %q is %s; no fallback for error boxes", errorParkID, reason)
+	trace.CandidateEvaluations = []CandidateEvaluation{{
+		TargetType:     TargetTypePark,
+		TargetID:       errorParkID,
+		Eligible:       false,
+		RejectedReason: reason,
+	}}
+
+	return PresorterDecision{
+		Action:                ActionPass,
+		FallbackUsed:          false,
+		ErrorControlRequired:  true,
 		ErrorControlAvailable: false,
 		BalanceStrategy:       e.presorterCfg.BalanceStrategy,
 		Trace:                 trace,

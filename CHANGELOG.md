@@ -11,6 +11,10 @@ Este proyecto usa [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- `PresorterConfig.ErrorParkID` — park fijo exclusivo para cajas error/no-read.
+- `RulePresorterErrorFixedPark` — regla para routing a error park fijo.
+- `RulePresorterPassErrorParkUnavailable` — regla para ActionPass cuando error park no disponible.
+- `ActionPass` en Presorter: cuando error park no disponible, no accionar desvío.
 - `SorterConfig.BalanceStrategy` — campo para seleccionar estrategia de balanceo multi-target.
 - `BalanceLeastLoaded` soportado en sorter: elige el exit con menor `CurrentLoad`.
 - `RuleSorterBalancedMultiTarget` — regla cuando se usa balanceo por carga.
@@ -25,6 +29,8 @@ Este proyecto usa [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- `ResolvePresorter`: si `ErrorParkID` configurado y caja es error/no-read, enruta exclusivamente sin fallback.
+- Validación de `PresorterConfig`: `ErrorParkID` debe referenciar park existente si no está vacío.
 - Validación de `SorterConfig`: solo acepta `""` y `BalanceLeastLoaded` como `BalanceStrategy`.
 - `ResolveSorter` bifurca en step 12: first-available (legacy) vs least_loaded (balanced).
 - Trazabilidad: `CandidateEvaluations` incluye carga de cada exit evaluado.

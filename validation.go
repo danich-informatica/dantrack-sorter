@@ -88,6 +88,12 @@ func ValidatePresorterConfig(cfg PresorterConfig) error {
 		}
 	}
 
+	if cfg.ErrorParkID != "" {
+		if _, ok := seen[cfg.ErrorParkID]; !ok {
+			return fmt.Errorf("%w: ErrorParkID %q does not reference an existing park", ErrInvalidConfig, cfg.ErrorParkID)
+		}
+	}
+
 	return nil
 }
 
