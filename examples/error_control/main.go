@@ -29,17 +29,13 @@ func main() {
 		return
 	}
 
-	parkStates := []sorter.ParkState{
-		{ParkID: "park_normal", Available: true, CurrentLoad: 10},
-		{ParkID: "park_error", Available: true, CurrentLoad: 5},
-	}
+	parkStates := sorter.ParkStates(
+		sorter.ParkAvailable("park_normal", 10),
+		sorter.ParkAvailable("park_error", 5),
+	)
 
 	// 2. Box with read error — should prefer error control park.
-	boxNoRead := sorter.BoxContext{
-		BoxID:      "BOX-ERR-001",
-		QR:         "QR-NOREAD",
-		ReadStatus: "no_read",
-	}
+	boxNoRead := sorter.ErrorBox("BOX-ERR-001", "no_read")
 
 	decision, err := engine.ResolvePresorter(context.Background(), sorter.PresorterRequest{
 		TraceID:    "trace-err-001",
@@ -60,12 +56,12 @@ func main() {
 	fmt.Println()
 
 	// 3. Box with ErrorFlags — should also prefer error control park.
-	boxFlags := sorter.BoxContext{
-		BoxID:      "BOX-ERR-002",
-		QR:         "QR-FLAGS",
-		ReadStatus: "ok",
-		ErrorFlags: []string{"damaged_label", "weight_mismatch"},
-	}
+	boxFlags := sorter.NewBox("BOX-ERR-002").
+		QR("QR-FLAGS").
+		ReadStatus("ok").
+		ErrorFlag("damaged_label").
+		ErrorFlag("weight_mismatch").
+		Build()
 
 	decision2, err := engine.ResolvePresorter(context.Background(), sorter.PresorterRequest{
 		TraceID:    "trace-err-002",

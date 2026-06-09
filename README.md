@@ -134,6 +134,45 @@ La librería no calcula ni resetea la ventana. El orquestador es responsable de:
 
 Si `AccumulatedLoad == 0` en todos los parks, se usa `CurrentLoad` (least_loaded).
 
+## Helpers y Builders
+
+La librería incluye helpers para reducir el boilerplate del consumidor.
+Todas las funciones son aditivas y compatibles con la API v0.2.0.
+
+**Match helpers** — shortcuts para `MatchCondition`:
+
+```go
+sorter.MatchEquals("variety", "Fuji")
+sorter.MatchIn("caliber", "80", "85", "90")
+sorter.MatchExists("tags.lote")
+```
+
+**State helpers** — constructores semánticos para estados:
+
+```go
+sorter.ExitAvailable("exit_A", 30)
+sorter.ExitBlocked("exit_B")
+sorter.ParkAvailable("park_1", 45)
+sorter.ParkAvailableWithWindow("park_2", 10, 120)
+```
+
+**Box builder** — construcción fluida de `BoxContext`:
+
+```go
+box := sorter.NewBox("BOX-001").Variety("Fuji").Caliber("80").Build()
+errBox := sorter.ErrorBox("BOX-ERR", "no_read")
+```
+
+**Assignment builder** — construcción fluida de `Assignment`:
+
+```go
+a := sorter.NewAssignment("a1", 10).
+    MatchEquals("variety", "Fuji").
+    MatchIn("caliber", "80", "85").
+    ToExits("exit_A", "exit_B").
+    Build()
+```
+
 ## Tests
 
 ```bash

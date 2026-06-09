@@ -32,48 +32,35 @@ func main() {
 		return
 	}
 
-	// 3. Define assignments.
+	// 3. Define assignments using builders.
 	assignments := sorter.AssignmentSet{
 		Assignments: []sorter.Assignment{
-			{
-				ID:       "assign_apples_A",
-				Enabled:  true,
-				Priority: 10,
-				Conditions: []sorter.MatchCondition{
-					{Field: "variety", Operator: sorter.OpEquals, Values: []string{"Fuji"}},
-					{Field: "caliber", Operator: sorter.OpIn, Values: []string{"80", "85", "90"}},
-				},
-				TargetType: sorter.TargetTypeExit,
-				TargetID:   "exit_A",
-			},
-			{
-				ID:       "assign_oranges_B",
-				Enabled:  true,
-				Priority: 5,
-				Conditions: []sorter.MatchCondition{
-					{Field: "variety", Operator: sorter.OpEquals, Values: []string{"Navel"}},
-				},
-				TargetType: sorter.TargetTypeExit,
-				TargetID:   "exit_B",
-			},
+			sorter.NewAssignment("assign_apples_A", 10).
+				MatchEquals("variety", "Fuji").
+				MatchIn("caliber", "80", "85", "90").
+				ToExit("exit_A").
+				Build(),
+			sorter.NewAssignment("assign_oranges_B", 5).
+				MatchEquals("variety", "Navel").
+				ToExit("exit_B").
+				Build(),
 		},
 	}
 
 	// 4. Build box context.
-	box := sorter.BoxContext{
-		BoxID:   "BOX-001",
-		QR:      "QR123456",
-		SKU:     "SKU-FUJI-80",
-		Variety: "Fuji",
-		Caliber: "80",
-	}
+	box := sorter.NewBox("BOX-001").
+		QR("QR123456").
+		SKU("SKU-FUJI-80").
+		Variety("Fuji").
+		Caliber("80").
+		Build()
 
 	// 5. Build exit states (all available).
-	exitStates := []sorter.SorterExitState{
-		{ExitID: "exit_A", Available: true},
-		{ExitID: "exit_B", Available: true},
-		{ExitID: "exit_default", Available: true},
-	}
+	exitStates := sorter.ExitStates(
+		sorter.ExitAvailable("exit_A", 0),
+		sorter.ExitAvailable("exit_B", 0),
+		sorter.ExitAvailable("exit_default", 0),
+	)
 
 	// 6. Resolve sorter decision.
 	decision, err := engine.ResolveSorter(context.Background(), sorter.SorterRequest{

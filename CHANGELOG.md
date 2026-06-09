@@ -7,6 +7,20 @@ Este proyecto usa [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [Unreleased]
+
+### Added
+
+- **Match helpers**: `Match`, `MatchEquals`, `MatchNotEquals`, `MatchIn`, `MatchNotIn`, `MatchExists`, `MatchNotExists` — shortcuts para construir `MatchCondition`.
+- **Exit state helpers**: `ExitStates`, `ExitAvailable`, `ExitFull`, `ExitBlocked`, `ExitMaintenance`, `ExitError`, `ExitUnavailable`.
+- **Park state helpers**: `ParkStates`, `ParkAvailable`, `ParkAvailableWithWindow`, `ParkFull`, `ParkBlocked`, `ParkMaintenance`, `ParkError`, `ParkUnavailable`.
+- **BoxBuilder**: `NewBox(boxID).Variety("Fuji").Caliber("80").Build()` — builder fluido inmutable para `BoxContext`.
+- **ErrorBox**: `ErrorBox(boxID, readStatus)` — shortcut para cajas con error.
+- **AssignmentBuilder**: `NewAssignment(id, priority).MatchEquals(...).ToExits(...).Build()` — builder fluido inmutable para `Assignment`.
+- 48 tests nuevos para helpers y builders.
+
+---
+
 ## [v0.2.0] — 2026-06-03
 
 ### Added

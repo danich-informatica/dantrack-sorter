@@ -36,25 +36,19 @@ func sorterFallback() {
 	// Assignment matches exit_A, but exit_A is blocked.
 	decision, err := engine.ResolveSorter(context.Background(), sorter.SorterRequest{
 		TraceID: "trace-fallback-sorter",
-		Box:     sorter.BoxContext{BoxID: "BOX-F01", QR: "QR-F01", Variety: "Fuji"},
+		Box:     sorter.NewBox("BOX-F01").QR("QR-F01").Variety("Fuji").Build(),
 		Assignments: sorter.AssignmentSet{
 			Assignments: []sorter.Assignment{
-				{
-					ID:       "assign_fuji",
-					Enabled:  true,
-					Priority: 10,
-					Conditions: []sorter.MatchCondition{
-						{Field: "variety", Operator: sorter.OpEquals, Values: []string{"Fuji"}},
-					},
-					TargetType: sorter.TargetTypeExit,
-					TargetID:   "exit_A",
-				},
+				sorter.NewAssignment("assign_fuji", 10).
+					MatchEquals("variety", "Fuji").
+					ToExit("exit_A").
+					Build(),
 			},
 		},
-		ExitStates: []sorter.SorterExitState{
-			{ExitID: "exit_A", Available: false, Blocked: true},
-			{ExitID: "exit_default", Available: true},
-		},
+		ExitStates: sorter.ExitStates(
+			sorter.ExitBlocked("exit_A"),
+			sorter.ExitAvailable("exit_default", 0),
+		),
 		EvalTime: time.Date(2026, 6, 1, 10, 0, 0, 0, time.UTC),
 	})
 	if err != nil {
@@ -90,12 +84,12 @@ func presorterFallback() {
 	// park_A and park_B are full; park_fallback (default) is the only one available.
 	decision, err := engine.ResolvePresorter(context.Background(), sorter.PresorterRequest{
 		TraceID: "trace-fallback-presorter-1",
-		Box:     sorter.BoxContext{BoxID: "BOX-F02", QR: "QR-F02"},
-		ParkStates: []sorter.ParkState{
-			{ParkID: "park_A", Available: true, Full: true},
-			{ParkID: "park_B", Available: true, Full: true},
-			{ParkID: "park_fallback", Available: true},
-		},
+		Box:     sorter.NewBox("BOX-F02").QR("QR-F02").Build(),
+		ParkStates: sorter.ParkStates(
+			sorter.ParkFull("park_A"),
+			sorter.ParkFull("park_B"),
+			sorter.ParkAvailable("park_fallback", 0),
+		),
 		EvalTime: time.Date(2026, 6, 1, 10, 0, 0, 0, time.UTC),
 	})
 	if err != nil {
@@ -113,12 +107,12 @@ func presorterFallback() {
 	fmt.Println("=== Presorter: ALL parks blocked → ActionReject ===")
 	decision2, err := engine.ResolvePresorter(context.Background(), sorter.PresorterRequest{
 		TraceID: "trace-fallback-presorter-2",
-		Box:     sorter.BoxContext{BoxID: "BOX-F03", QR: "QR-F03"},
-		ParkStates: []sorter.ParkState{
-			{ParkID: "park_A", Available: false, Blocked: true},
-			{ParkID: "park_B", Available: false, Blocked: true},
-			{ParkID: "park_fallback", Available: false, Blocked: true},
-		},
+		Box:     sorter.NewBox("BOX-F03").QR("QR-F03").Build(),
+		ParkStates: sorter.ParkStates(
+			sorter.ParkBlocked("park_A"),
+			sorter.ParkBlocked("park_B"),
+			sorter.ParkBlocked("park_fallback"),
+		),
 		EvalTime: time.Date(2026, 6, 1, 10, 0, 0, 0, time.UTC),
 	})
 	if err != nil {
