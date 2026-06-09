@@ -26,10 +26,11 @@ trazables con razón, regla aplicada y candidatos evaluados.
 
 ## Estado
 
-**v0.2.0** — Stable release.  
+**v0.3.0** — Stable release.  
 Motor completo: `ResolveSorter` + `ResolvePresorter` con balanceo multi-target,
-error park fijo, balanceo global por ventana, y vistas de disponibilidad.  
-262 tests · 94.4% cobertura · race-free · sin dependencias externas.
+error park fijo, balanceo global por ventana, vistas de disponibilidad,
+y helpers/builders para reducción de boilerplate del consumidor.  
+310 tests · 95.1% cobertura · race-free · sin dependencias externas.
 
 Ver [CHANGELOG.md](CHANGELOG.md) para historial de cambios.
 

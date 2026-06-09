@@ -7,7 +7,7 @@ Este proyecto usa [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
-## [Unreleased]
+## [v0.3.0] — 2026-06-09
 
 ### Added
 
@@ -18,6 +18,12 @@ Este proyecto usa [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **ErrorBox**: `ErrorBox(boxID, readStatus)` — shortcut para cajas con error.
 - **AssignmentBuilder**: `NewAssignment(id, priority).MatchEquals(...).ToExits(...).Build()` — builder fluido inmutable para `Assignment`.
 - 48 tests nuevos para helpers y builders.
+
+### Verified
+
+- Integración externa aprobada (`prueba-librería`): helpers funcionando, -18% boilerplate.
+- 310 tests PASS, 95.1% coverage, race-free.
+- Sin cambios breaking. API v0.2.0 compatible.
 
 ---
 
