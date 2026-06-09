@@ -32,22 +32,21 @@ func main() {
 	}
 
 	// 3. Define park states (park_2 has lowest load).
-	parkStates := []sorter.ParkState{
-		{ParkID: "park_1", Available: true, CurrentLoad: 45},
-		{ParkID: "park_2", Available: true, CurrentLoad: 12},
-		{ParkID: "park_3", Available: true, CurrentLoad: 30},
-	}
+	parkStates := sorter.ParkStates(
+		sorter.ParkAvailable("park_1", 45),
+		sorter.ParkAvailable("park_2", 12),
+		sorter.ParkAvailable("park_3", 30),
+	)
 
 	// 4. Build box context (normal box, no errors).
-	box := sorter.BoxContext{
-		BoxID:         "BOX-100",
-		QR:            "QR-NORMAL",
-		SKU:           "SKU-APPLE",
-		Variety:       "Gala",
-		Caliber:       "75",
-		ReadStatus:    "ok",
-		QualityStatus: "approved",
-	}
+	box := sorter.NewBox("BOX-100").
+		QR("QR-NORMAL").
+		SKU("SKU-APPLE").
+		Variety("Gala").
+		Caliber("75").
+		ReadStatus("ok").
+		QualityStatus("approved").
+		Build()
 
 	// 5. Resolve presorter decision.
 	decision, err := engine.ResolvePresorter(context.Background(), sorter.PresorterRequest{
